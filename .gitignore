@@ -1,0 +1,18 @@
+# Credentials — restore from fresh Hermes install
+.env
+.env.*
+auth.json
+mcporter.json
+*.env
+credentials.*
+
+# Runtime state — rebuilds automatically
+state.db
+*.db
+*.sqlite
+sessions/
+*.session
+
+# OS noise
+.DS_Store
+Thumbs.db
