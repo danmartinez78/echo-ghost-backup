@@ -574,11 +574,12 @@ def generate_movement_model(case_data, overpass_features=None,
 
     if terrain_flags:
         signals.append(f"Terrain signals: {', '.join(terrain_flags[:3])}")
-    else:
-        signals.append("No terrain features detected within search radius")
+    # NOTE: if terrain_flags is empty, we did not actually check terrain.
+    # Do NOT append a misleading "no terrain" signal — terrain analysis is a
+    # future enrichment step, not a finding that no terrain exists.
 
     assumptions.append("No confirmed sightings after last report timestamp")
-    assumptions.append("No third-party transport or人为 relocation")
+    assumptions.append("No third-party transport or human-caused relocation")
 
     rationale = {
         "summary": f"Probability surface centered on last confirmed point, oriented {bearing_deg:.0f}° along primary movement axis.",
