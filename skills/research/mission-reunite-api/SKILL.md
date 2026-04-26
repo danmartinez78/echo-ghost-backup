@@ -2,7 +2,7 @@
 name: mission-reunite-api
 description: Mission Reunite SAR platform API. Read cases, post intel enrichments, analyze spatial patterns. Experimental branch at shadowhound-case-api-experimental.up.railway.app.
 tags: [mission-reunite, SAR, lost-pet, API, shadowhound]
-version: 1.6
+version: 1.7
 ---
 
 # Mission Reunite API Skill
@@ -55,11 +55,14 @@ PUT /api/v1/agent/cases/{case_id}/runs/{run_id}?status=success|partial|failed
 Status goes in the **query param**. Optional `steps` array goes in the **body**:
 ```json
 [
-  { "component": "weather", "status": "success", "enrichment_id": "..." },
-  { "component": "terrain_analysis", "status": "failed", "error": "406 ..." },
-  { "component": "risk_assessment", "status": "skipped", "reason": "depends on terrain" }
+  { "component": "weather", "status": "success", "enrichment_id": "uuid" },
+  { "component": "terrain_analysis", "status": "failed", "enrichment_id": "uuid" },
+  { "component": "risk_assessment", "status": "skipped" }
 ]
 ```
+
+**Step fields:** `component` (string), `status` (string), `enrichment_id` (optional UUID), `error` (optional string).
+**Do NOT include `notes` or `summary` in step objects** — these fields are not supported by `UpdateRunPayload`.
 
 Run statuses:
 - `success` — all intended components completed
@@ -88,19 +91,35 @@ Run statuses:
 
 ## Enrichment Write Contract
 
+**IMPORTANT — all enrichments require the `data` wrapper:**
+
 ```json
 POST /api/v1/agent/cases/{case_id}/enrichment
 {
-  "type": "movement_forecast | weather | terrain | alert | observation | search_plan | risk_assessment | behavior_profile | sighting_analysis | timeline | recommendation | error",
+  "type": "movement_forecast | weather | terrain | alert | ...",
   "source": "open-meteo | echo-intel | echo",
   "run_id": "run-uuid",
-  "severity": "info | warning | urgent (optional)",
-  "title": "optional human-readable title",
-  "data": { ... },
   "supersede_existing": true,
-  "expires_at": "ISO-8601 (optional)"
+  "data": { ... }    // <-- the enrichment BODY goes here as "data"
 }
 ```
+
+The enrichment `data` field contains the actual enrichment body (model data, weather data, alert details, etc.).
+Generator output (`heatmap_generator.py`) is enrichment-shaped and becomes the `data` field:
+
+```python
+raw_model = generate_movement_model(case_data)  # returns flat enrichment body
+payload = {
+    "type": "movement_forecast",
+    "source": "echo-intel",
+    "run_id": run_id,
+    "supersede_existing": True,
+    "data": raw_model   # generator output becomes the data field
+}
+post_enrichment(case_id, payload)
+```
+
+This `data` wrapper applies to ALL enrichment types — `weather`, `movement_forecast`, `terrain`, `alert`, `observation`, `search_plan`, etc.
 
 ## Agent Note Write Contract
 
@@ -431,4 +450,4 @@ Use a separate `origin_report` variable for bearing computation to avoid shadowi
 
 ---
 
-*Version 1.6 — movement_model→movement_forecast, terrain is valid type, agent_note uses `note` field, run completion uses ?status query param, LKP via get_lkp(), data.rationale preferred, added alert/observation/terrain workflows (2026-04-25)*
+*Version 1.7 — added `data` wrapper pattern + generator wrapping example; fixed step object (no `notes`/`summary`); updated run completion body format (2026-04-25)*

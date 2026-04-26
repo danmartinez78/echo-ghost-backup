@@ -589,12 +589,11 @@ def generate_movement_model(case_data, overpass_features=None,
 
     # ── Step 9c: Assemble enrichment payload ───────────────────────────────────
     movement_model = {
-        "type": "movement_model",
+        "type": "movement_forecast",
         "version": 2,
         "lkp": {
             "lat": round(lkp_lat, 6),
             "lon": round(lkp_lon, 6),
-            "is_confirmed": bool(lkp_is_confirmed),
             "source": lkp_source,
         },
         "movement_params": {
